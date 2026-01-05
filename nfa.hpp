@@ -47,10 +47,12 @@ struct Frag {
      * to the next state 's'.
      */
     void patch(State* s) {
-        for (auto& ptr : out_ptrs) {
+    for (auto& ptr : out_ptrs) {
+        if (ptr && !*ptr) { // Only patch if the pointer exists and is currently null
             *ptr = s;
         }
     }
+}
 };
 
 #endif  // NFA_HPP

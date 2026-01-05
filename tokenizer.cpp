@@ -48,6 +48,7 @@ void Tokenizer::add_concat_tokens(std::vector<Token>& tokens) {
         current.type == TokenType::STAR ||
         current.type == TokenType::PLUS ||
         current.type == TokenType::QUESTION ||
+        current.type == TokenType::QUANTIFIER_RANGE ||
         current.type == TokenType::CARET     // YES: Anchor start links to what follows
     );
 

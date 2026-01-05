@@ -6,7 +6,33 @@ State* NfaBuilder::create_state(StateType type) {
 
 Frag NfaBuilder::copy_fragment(Frag original) {
     std::map<State*, State*> old_to_new;
-    return {copy_state(original.start, old_to_new), {}}; // Simplified for logic
+    State* new_start = copy_state(original.start, old_to_new);
+    
+    std::vector<State**> new_exits;
+    // We traverse the NEWly copied states to find where the paths end (nullptr)
+    std::set<State*> visited;
+    std::stack<State*> s;
+    s.push(new_start);
+    
+    while(!s.empty()){
+        State* curr = s.top(); s.pop();
+        if(!curr || visited.count(curr)) continue;
+        visited.insert(curr);
+        
+        // If out is null, it's a dangling exit we need to patch later
+        if (!curr->out && curr->type != StateType::MATCH) {
+            new_exits.push_back(&curr->out);
+        }
+        // If out1 is null (and it's a SPLIT state), it's also an exit
+        if (!curr->out1 && curr->type == StateType::SPLIT) {
+            new_exits.push_back(&curr->out1);
+        }
+        
+        if(curr->out) s.push(curr->out);
+        if(curr->out1) s.push(curr->out1);
+    }
+    
+    return Frag(new_start, new_exits);
 }
 
 State* NfaBuilder::copy_state(State* s, std::map<State*, State*>& lookup) {
@@ -143,26 +169,27 @@ State* NfaBuilder::build(const std::vector<Token>& postfix) {
                     stack.push(Frag(mandatory.start, {&s->out1}));
                 } 
                 else if (t.max > t.min) {
-                    // Case: {m,n} -> Mandatory followed by (n-m) optional branches
                     Frag optional_chain = mandatory;
-                    
+                    // We need to keep track of ALL ways to exit the optional section
+                    std::vector<State**> all_optional_exits = mandatory.out_ptrs;
+
                     for (int i = 0; i < (t.max - t.min); ++i) {
                         Frag next_opt = copy_fragment(e);
                         State* s = create_state(StateType::SPLIT);
                         
                         s->out = next_opt.start;
-                        // s->out1 is the "skip" path
+                        // s->out1 is the "skip" path for this repetition
                         
                         optional_chain.patch(s);
                         
-                        // New dangling exits: the end of the match OR the skip path
-                        std::vector<State**> new_exits = next_opt.out_ptrs;
-                        new_exits.push_back(&s->out1);
+                        // The new exits are the end of this copy AND the skip path we just made
+                        all_optional_exits.insert(all_optional_exits.end(), next_opt.out_ptrs.begin(), next_opt.out_ptrs.end());
+                        all_optional_exits.push_back(&s->out1);
                         
-                        optional_chain = Frag(optional_chain.start, new_exits);
+                        optional_chain = Frag(next_opt.start, next_opt.out_ptrs); 
                     }
-                    stack.push(optional_chain);
-                } 
+                    stack.push(Frag(mandatory.start, all_optional_exits));
+                }
                 else {
                     // Case: {m,m} -> Exactly m times, already handled by mandatory
                     stack.push(mandatory);

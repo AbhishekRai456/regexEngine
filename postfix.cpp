@@ -59,7 +59,8 @@ std::vector<Token> PostfixConverter::convert(const std::vector<Token>& infix) {
                     last_type != TokenType::CHAR_CLASS && last_type != TokenType::RPAREN) {
                     throw std::runtime_error("Syntax Error: Quantifier follows invalid token");
                 }
-                goto push_operator;
+                postfix.push_back(t);
+                break;
 
             case TokenType::ALTERNATION:
                 // Validation: Cannot start with | or have ||
