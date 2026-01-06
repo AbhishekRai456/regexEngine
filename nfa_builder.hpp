@@ -5,16 +5,24 @@
 
 class NfaBuilder {
 public:
-    // Takes the postfix vector and returns the starting State of the NFA graph.
-    // The graph ends at a State with type StateType::MATCH.
+    // Build an NFA from postfix regex and return its start state.
+    // The NFA's accepting state will have type StateType::MATCH.
     State* build(const std::vector<Token>& postfix);
+
     Frag copy_fragment(Frag);
-    State* copy_state(State*, std::map<State*, State*>&);
+    State* copy_state(State*, std::unordered_map<State*, State*>&);
 private:
-    // Helper to create and manage state allocation
+    // Allocate a new state and keep ownership in the internal pool
     State* create_state(StateType type);
+
+    // Owns all states created during NFA construction
+    // Ensures that all State objects live as long as the NfaBuilder lives
+    // When NfaBuilder is destroyed, state_pool is destroyed, and all State
+    // objects are automatically deleted
+    std::vector<std::unique_ptr<State>> state_pool; // Automatic cleanup (RAII)
 };
 
+// Debugging tools
 class NfaDebugger {
 public:
     static void print_graph(State* start) {

@@ -1,6 +1,5 @@
 #ifndef NFA_HPP
 #define NFA_HPP
-#include "std.hpp"
 #include "tokenizer.hpp"
 
 enum class StateType{
@@ -16,23 +15,31 @@ enum class StateType{
 
 struct State {
     StateType type;
-    int c = 0;                  // Literal char value
-    int save_id = -1;           // For SAVE states (group_id * 2 or 2+1)
+    char c;
+    // Valid only when type == StateType::CHAR; value is unspecified otherwise.
+
+    int save_id = -1;
+    // For capture groups: store input positions
+    // even = group start, odd = group end
+
+    // when type == StateType::CHAR_CLASS
     std::vector<CharRange> ranges;
     bool negated = false;
 
-    State* out = nullptr;       // Primary transition
-    State* out1 = nullptr;      // Secondary transition (only for SPLIT)
+    State* out = nullptr;       // transition1
+    State* out1 = nullptr;      // optional transition2 (only for SPLIT)
 
-    // Help the matcher avoid infinite loops/duplicate processing
-    int last_list = -1;
+    int last_list = -1; 
+    // Marks whether this state has already been added to the current active-states list,
+    // preventing duplicate entries and infinite ε-transition loops
 
     State(StateType t) : type(t) {}
 };
 
+// Frag represents a start state and a list of "dangling exits" of an NFA fragment
 struct Frag {
     State* start;
-    std::vector<State**> out_ptrs; 
+    std::vector<State**> out_ptrs;  // stores the address of the pointers which are dangling
 
     // Constructor for single-exit fragments (like a literal 'a')
     Frag(State* s) : start(s) {
@@ -42,17 +49,14 @@ struct Frag {
     // Constructor for multi-exit fragments (like alternation or star)
     Frag(State* s, std::vector<State**> out) : start(s), out_ptrs(out) {}
 
-    /**
-     * Patches (connects) all dangling arrows in this fragment 
-     * to the next state 's'.
-     */
+    // Patch (connect) dangling arrows in this fragment
     void patch(State* s) {
-    for (auto& ptr : out_ptrs) {
-        if (ptr && !*ptr) { // Only patch if the pointer exists and is currently null
-            *ptr = s;
+        for (auto& ptr : out_ptrs) {
+            if (ptr && !*ptr) { // Only patch if the pointer exists and is currently null
+                *ptr = s;
+            }
         }
     }
-}
 };
 
 #endif  // NFA_HPP

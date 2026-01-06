@@ -1,29 +1,30 @@
 #include "nfa_builder.hpp"
 
-State *NfaBuilder::create_state(StateType type)
-{
-    return new State(type);
+// Creates a new State object of the given type, stores it in the state pool,
+// and returns a raw pointer to the newly created state
+State *NfaBuilder::create_state(StateType type){
+    state_pool.push_back(std::make_unique<State>(type));
+    return state_pool.back().get();
 }
 
-Frag NfaBuilder::copy_fragment(Frag original)
-{
-    std::map<State *, State *> old_to_new;
+// Deep copy a fargment's NFA
+// Returns a new Frag with the copied start state and the copied exits
+Frag NfaBuilder::copy_fragment(Frag original){
+    std::unordered_map<State *, State *> old_to_new;
     State *new_start = copy_state(original.start, old_to_new);
 
     std::vector<State **> new_exits;
-    // We traverse the NEWly copied states to find where the paths end (nullptr)
-    std::set<State *> visited;
+    // Traverse the newly copied states to store adresses of dangling pointers in the new fragment
+    std::unordered_set<State *> visited;  // Remember which states have been already visited
+    // Depth first traversal of the graph:
     std::stack<State *> s;
     s.push(new_start);
-
-    while (!s.empty())
+    while (!s.empty())  // Loop until there are no more states left to process
     {
         State *curr = s.top();
         s.pop();
-        if (!curr || visited.count(curr))
-            continue;
+        if (!curr || visited.count(curr)) continue;
         visited.insert(curr);
-
         // If out is null, it's a dangling exit we need to patch later
         if (!curr->out && curr->type != StateType::MATCH)
         {
@@ -35,45 +36,50 @@ Frag NfaBuilder::copy_fragment(Frag original)
             new_exits.push_back(&curr->out1);
         }
 
-        if (curr->out)
-            s.push(curr->out);
-        if (curr->out1)
-            s.push(curr->out1);
+        if (curr->out) s.push(curr->out);
+        if (curr->out1) s.push(curr->out1);
     }
 
     return Frag(new_start, new_exits);
 }
 
-State *NfaBuilder::copy_state(State *s, std::map<State *, State *> &lookup)
-{
-    if (!s || s->type == StateType::MATCH)
-        return s;
-    if (lookup.count(s))
-        return lookup[s];
+// Deep copy a NFA subgraph starting from state 's'
+// Creates new State objects for all reachable states (except MATCH)
+// Returns a pointer to the copied version of 's'
+State *NfaBuilder::copy_state(State *s, std::unordered_map<State *, State *> &lookup){
+    // 'lookup' stores the states which are already 
+    // copied. map: key = old_state, value = new_state (copy of the old_state)
 
-    State *res = create_state(s->type);
-    res->c = s->c;
-    res->ranges = s->ranges;
-    res->negated = s->negated;
-    res->save_id = s->save_id;
-    lookup[s] = res;
+    if (!s || s->type == StateType::MATCH) return s;    // If state is null or is the final MATCH state, return it as is
+    if (lookup.count(s)) return lookup[s];  // If this state was already copied, return the existing copy
 
-    res->out = copy_state(s->out, lookup);
-    res->out1 = copy_state(s->out1, lookup);
-    return res;
+    // Create a new state with the same type and copy fields
+    State *result = create_state(s->type);
+    result->c = s->c;
+    result->ranges = s->ranges;
+    result->negated = s->negated;
+    result->save_id = s->save_id;
+    lookup[s] = result; // Remember that this original state is now copied
+
+    // Recursively copy outgoing transitions
+    result->out = copy_state(s->out, lookup);
+    result->out1 = copy_state(s->out1, lookup);
+    return result;
 }
 
-State *NfaBuilder::build(const std::vector<Token> &postfix)
-{
-    if (postfix.empty())
-        return nullptr;
+// Builds an NFA from a tokenized postfix regex pattern.
+// Iterates the postfix tokens, pushed and combines NFA fragments on a stack
+// according to each operator, and finally connects all remaining dangling 
+// exits to a single MATCH state.
+// Returns a pointer to the start state of the constructed NFA, or nullptr if
+// the input is empty.
+State *NfaBuilder::build(const std::vector<Token> &postfix){
+    if (postfix.empty()) return nullptr;
 
     std::stack<Frag> stack;
 
-    for (const auto &t : postfix)
-    {
-        switch (t.type)
-        {
+    for (const auto &t : postfix){
+        switch (t.type){
         case TokenType::LITERAL:
         {
             State *s = create_state(StateType::CHAR);
@@ -120,7 +126,6 @@ State *NfaBuilder::build(const std::vector<Token> &postfix)
         }
         case TokenType::CONCAT:
         {
-            // Pop in reverse order: right operand, then left
             Frag e2 = stack.top();
             stack.pop();
             Frag e1 = stack.top();
@@ -182,31 +187,24 @@ State *NfaBuilder::build(const std::vector<Token> &postfix)
             stack.pop();
 
             // 1. Handle the mandatory part (m)
-            // We use a ternary or a helper-scope to ensure 'mandatory' is initialized immediately.
-            Frag mandatory = [&]()
-            {
-                if (t.min == 0)
-                {
+            // Initialize 'mandatory' with an immediately-invoked lambda (no valid default state).
+            Frag mandatory = [&](){
+                if (t.min == 0){
                     State *eps = create_state(StateType::SPLIT);
                     return Frag(eps, {&eps->out});
-                }
-                else
-                {
+                }else{
                     return e; // Use the first one as the base
                 }
             }();
-
             // If min > 1, append the necessary copies
-            for (int i = 1; i < t.min; ++i)
-            {
+            for (int i = 1; i < t.min; i++){
                 Frag next_copy = copy_fragment(e);
                 mandatory.patch(next_copy.start);
                 mandatory = Frag(mandatory.start, next_copy.out_ptrs);
             }
 
             // 2. Handle the optional part (n - m) or infinite (m, )
-            if (t.max == -1)
-            { // Case {m,}
+            if (t.max == -1){ // Case {m,}
                 State *s = create_state(StateType::SPLIT);
                 Frag loop_part = copy_fragment(e);
 
@@ -215,30 +213,29 @@ State *NfaBuilder::build(const std::vector<Token> &postfix)
 
                 mandatory.patch(s);
                 stack.push(Frag(mandatory.start, {&s->out1}));
-            }
-            else if (t.max > t.min)
-            { // Case {m,n}
+            }else if (t.max > t.min){ // Case {m,n}
+                // Build a chain of optional fragments, each one guarded by a SPLIT that can either
+                // take the repetition or skip it and move on
                 Frag optional_chain = mandatory;
-                std::vector<State **> all_exits = mandatory.out_ptrs;
+                std::vector<State **> all_exits;
 
-                for (int i = 0; i < (t.max - t.min); ++i)
-                {
+                for (int i = 0; i < (t.max - t.min); i++){
                     Frag next_opt = copy_fragment(e);
                     State *s = create_state(StateType::SPLIT);
 
                     s->out = next_opt.start;
                     optional_chain.patch(s);
 
-                    // Collect exits from the match path AND the skip path
-                    all_exits.insert(all_exits.end(), next_opt.out_ptrs.begin(), next_opt.out_ptrs.end());
+                    // Collect exits from the skip path
                     all_exits.push_back(&s->out1);
 
                     optional_chain = Frag(next_opt.start, next_opt.out_ptrs);
                 }
+                // Add exits from the last repetition: if all optional parts are taken,
+                // the match can continue after the final copied fragment.
+                all_exits.insert(all_exits.end(), optional_chain.out_ptrs.begin(), optional_chain.out_ptrs.end());
                 stack.push(Frag(mandatory.start, all_exits));
-            }
-            else
-            {
+            }else{  // Case {m} (exactly m)
                 stack.push(mandatory);
             }
             break;
@@ -248,15 +245,18 @@ State *NfaBuilder::build(const std::vector<Token> &postfix)
         }
     }
 
-    if (stack.empty())
-        return nullptr;
+    // If no fragments were built (empty regex) return nullptr (no NFA)
+    if (stack.empty()) return nullptr;
+
+    // After processing all tokens, ideally there should be exactly one fragment
+    // If more than one fragments remain, they are implicitly concatenated
     while (stack.size() > 1)
     {
         Frag e2 = stack.top();
         stack.pop();
         Frag e1 = stack.top();
         stack.pop();
-        e1.patch(e2.start); // Manually link the orphaned fragments
+        e1.patch(e2.start);
         stack.push(Frag(e1.start, e2.out_ptrs));
     }
 
@@ -268,3 +268,22 @@ State *NfaBuilder::build(const std::vector<Token> &postfix)
 
     return final_frag.start;
 }
+
+// Time Complexity Analysis:
+
+// T = number of postfix tokens
+// S = total number of NFA states created, including expansions caused by
+// operators like '*', '+', '?', and '{m, n}'.
+
+// create_state():
+// O(1) per call → total O(S)
+
+// copy_state(s):
+// Copies each reachable state once → O(k) (k is the number of states reachable from s)
+
+// copy_fragment(f):
+// O(k) (k = number of states in the fragment)
+
+// build() function;
+// Total Average TC = O(T + S) (assuming good hash behavior of std::unordered_map and std::unordered_set)
+// The builder therefore runs in time linear in the size of the constructed NFA
