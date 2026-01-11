@@ -111,7 +111,16 @@ private:
         std::string str = "";
         switch (s->type) {
             case StateType::CHAR:
-                str += s->c;
+                switch (s->c) {
+                    case '\\': str += "\\\\"; break;
+                    case '"':  str += "\\\""; break;
+                    case '\n': str += "\\n";  break;
+                    case '\t': str += "\\t";  break;
+                    case '\r': str += "\\r";  break;
+                    case '\f': str += "\\f";  break;
+                    case '\v': str += "\\v";  break;
+                    default:   str += s->c; break;
+                }
                 break;
             case StateType::CHAR_CLASS: {
                 str = s->negated ? "[^" : "[";

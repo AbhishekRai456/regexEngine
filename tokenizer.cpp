@@ -365,6 +365,7 @@ void print(const std::vector<Token> v){
             break;
         }
     }
+    std::cout << std::endl;
 }
 
 /*TOKENIZER TESTING: */
