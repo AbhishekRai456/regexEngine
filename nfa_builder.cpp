@@ -119,9 +119,20 @@ State *NfaBuilder::build(const std::vector<Token> &postfix){
         }
         case TokenType::RPAREN:
         {
+            // Create the save (end) state
             State *s = create_state(StateType::SAVE);
             s->save_id = t.group_id * 2 + 1; // End register (odd)
-            stack.push(Frag(s));
+            
+            // Extract the content of the group along with save (start)
+            Frag content = stack.top();
+            stack.pop();
+            Frag lparen_frag = stack.top();
+            stack.pop();
+            lparen_frag.patch(content.start);
+            content.patch(s);
+
+            // Push the whole fragment
+            stack.push(Frag(lparen_frag.start, {&s->out}));
             break;
         }
         case TokenType::CONCAT:

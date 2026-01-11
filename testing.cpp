@@ -25,10 +25,10 @@ int main(){
     for(size_t i = 0; i < vec3.size(); i++){
         Tokenizer t(vec3[i]);
         vector<Token> result = pc.convert(t.tokenize());
-        cout << i << ": ";
+        // cout << i << ": ";
         // print(result);
-        // NfaPrinter::print_nfa(nfa.build(result), i);
-        NfaDebugger::print_graph(nfa.build(result));
+        NfaPrinter::print_nfa(nfa.build(result), i);
+        // NfaDebugger::print_graph(nfa.build(result));
     }
     return 0;
 }
