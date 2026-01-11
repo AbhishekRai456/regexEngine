@@ -7,7 +7,6 @@
 #include<utility>
 #include<stdexcept>
 #include<memory>
-#include<cctype>
 #include<algorithm>
 #include<string>
 #include<string_view>
@@ -19,5 +18,7 @@
 #include<map>
 #include<unordered_map>
 #include<unordered_set>
+#include<fstream>
+#include<cstdlib>
 
 #endif  // STD_HPP

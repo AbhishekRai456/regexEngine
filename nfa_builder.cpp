@@ -193,7 +193,7 @@ State *NfaBuilder::build(const std::vector<Token> &postfix){
                     State *eps = create_state(StateType::SPLIT);
                     return Frag(eps, {&eps->out});
                 }else{
-                    return e; // Use the first one as the base
+                    return copy_fragment(e); // Use the first one as the base
                 }
             }();
             // If min > 1, append the necessary copies

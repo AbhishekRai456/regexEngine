@@ -27,6 +27,7 @@ int main(){
         vector<Token> result = pc.convert(t.tokenize());
         cout << i << ": ";
         // print(result);
+        // NfaPrinter::print_nfa(nfa.build(result), i);
         NfaDebugger::print_graph(nfa.build(result));
     }
     return 0;
