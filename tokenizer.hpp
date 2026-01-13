@@ -77,6 +77,7 @@ class Tokenizer{
     Token read_quantifier();
     void add_shorthand_ranges(char, Token&);
     void add_concat_tokens(std::vector<Token>&);
+    void normalize_ranges(std::vector<CharRange>&);
 };
 
 void print(const std::vector<Token>);
