@@ -3,6 +3,7 @@
 #include"tokenizer.hpp"
 #include"postfix.hpp"
 #include"nfa_builder.hpp"
+#include<chrono>
 using namespace std;
 
 int main(){
@@ -74,17 +75,17 @@ int main(){
     PostfixConverter pc;
     NfaBuilder nb;
     for(size_t i = 0; i < tcs.size(); i++){
-        std::cout << "running tc: " << i << " : " << tcs[i] << std::endl;
+        std::cout << "running tc: " << i << " : " << tcs[i] <<"\n";
         Tokenizer t(tcs[i]);
         vector<Token> tokens = t.tokenize();
         // 1. print tokens:
-        std::cout << "tokens:" << std::endl;
-        print(tokens);
+        // std::cout << "tokens:" << std::endl;
+        // print(tokens);
 
         vector<Token> postfix = pc.convert(tokens);
         // 2. print postfix:
-        std::cout << "postfix:" << std::endl;
-        print(tokens);
+        // std::cout << "postfix:" << std::endl;
+        // print(tokens);
         
         // 3. print nfa: (check results in nfas/)
         NfaPrinter::print_nfa(nb.build(postfix), i);
@@ -93,8 +94,13 @@ int main(){
 }
 
 // Result:
-// NOTE: Empty Parentheses -> std::runtime_error
+// Successfully built correct NFAs for these 100+ tcs
+// NOTE:
+// -> does not support lazy quantifier
+// -> empty parentheses -> gives error (design choice, pcre does not give error)
+// -> the time to execute this file might be large but that's only because we are printing the nfas using 'graphviz' for testing purposes
+// -> without the nfa printing, total time recorded by me to build these 100+ nfas was 184ms
 
 // compile and run the file:
-// g++ -std=c++20 -Wall -Wextra -Wpedantic -g testing.cpp tokenizer.cpp postfix.cpp nfa_builder.cpp -o testing.exe
+// g++ -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -Wconversion testing.cpp tokenizer.cpp postfix.cpp nfa_builder.cpp -o testing.exe
 // .\testing .exe

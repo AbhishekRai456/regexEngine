@@ -1,7 +1,7 @@
 #include "std.hpp"
 #include "tokenizer.hpp"
 
-Tokenizer::Tokenizer(std::string_view pattern) : pattern(pattern) {}
+Tokenizer::Tokenizer(std::string_view pat) : pattern(pat) {}
 
 char Tokenizer::peek() const{
     return eof() ? '\0' : pattern[i];
@@ -31,13 +31,13 @@ void Tokenizer::add_concat_tokens(std::vector<Token>& tokens) {
     std::vector<Token> normalized;
     normalized.reserve(tokens.size() * 2);
 
-    for (size_t i = 0; i < tokens.size(); i++) {
-        normalized.push_back(tokens[i]);
+    for (size_t idx = 0; idx < tokens.size(); idx++) {
+        normalized.push_back(tokens[idx]);
 
-        if (i + 1 >= tokens.size()) break;
+        if (idx + 1 >= tokens.size()) break;
 
-        const Token& current = tokens[i];
-        const Token& next = tokens[i + 1];
+        const Token& current = tokens[idx];
+        const Token& next = tokens[idx + 1];
 
         // Can the current token be the left side of a concatenation?
     bool is_ender = (
@@ -367,186 +367,3 @@ void print(const std::vector<Token> v){
     }
     std::cout << std::endl;
 }
-
-/*TOKENIZER TESTING: */
-
-// std::ostream& operator<<(std::ostream& os, TokenType type) {
-//     switch (type) {
-//         case TokenType::LITERAL:      return os << "LITERAL";
-//         case TokenType::DOT:          return os << "DOT";
-//         case TokenType::STAR:         return os << "STAR";
-//         case TokenType::PLUS:         return os << "PLUS";
-//         case TokenType::QUESTION:     return os << "QUESTION";
-//         case TokenType::ALTERNATION:  return os << "ALTERNATION";
-//         case TokenType::LPAREN:       return os << "LPAREN";
-//         case TokenType::RPAREN:       return os << "RPAREN";
-//         case TokenType::CARET:        return os << "CARET";
-//         case TokenType::DOLLAR:       return os << "DOLLAR";
-//         case TokenType::CHAR_CLASS:   return os << "CHAR_CLASS";
-//         case TokenType::QUANTIFIER_RANGE: return os << "QUANTIFIER";
-//         case TokenType::END:          return os << "END";
-//         default:                      return os << "UNKNOWN";
-//     }
-// }
-
-// int main(){
-
-//     std::vector<std::string> char_class_tests = {
-
-//         // =====================
-//         // BASIC VALID CLASSES
-//         // =====================
-//         "[a]",
-//         "[z]",
-//         "[0]",
-//         "[_]",
-//         "[9]",
-
-//         // =====================
-//         // MULTIPLE LITERALS
-//         // =====================
-//         "[abc]",
-//         "[xyz]",
-//         "[aZ9_]",
-
-//         // =====================
-//         // SIMPLE RANGES
-//         // =====================
-//         "[a-z]",
-//         "[A-Z]",
-//         "[0-9]",
-
-//         // =====================
-//         // MULTIPLE RANGES
-//         // =====================
-//         "[a-zA-Z]",
-//         "[a-z0-9]",
-//         "[A-Fa-f0-9]",
-
-//         // =====================
-//         // MIXED RANGE + LITERAL
-//         // =====================
-//         "[a-z_]",
-//         "[_a-z]",
-//         "[a-z9]",
-//         "[0-9a-f]",
-
-//         // =====================
-//         // NEGATED CLASSES
-//         // =====================
-//         "[^a]",
-//         "[^abc]",
-//         "[^a-z]",
-//         "[^a-zA-Z0-9_]",
-
-//         // =====================
-//         // ESCAPED CHARACTERS
-//         // =====================
-//         "[\\]]",
-//         "[\\-]",
-//         "[\\\\]",
-//         "[\\^]",
-
-//         // =====================
-//         // ESCAPED + NORMAL MIX
-//         // =====================
-//         "[a\\-z]",
-//         "[a\\]z]",
-//         "[\\-a-z]",
-
-//         // =====================
-//         // DASH EDGE CASES
-//         // =====================
-//         "[-a]",
-//         "[a-]",
-//         "[a\\-]",
-//         "[-]",
-
-//         // =====================
-//         // EMPTY CLASSES (INVALID)
-//         // =====================
-//         "[]",
-//         "[^]",
-
-//         // =====================
-//         // UNTERMINATED CLASSES
-//         // =====================
-//         "[a",
-//         "[^a",
-//         "[a-z",
-
-//         // =====================
-//         // INVALID RANGE ORDER
-//         // =====================
-//         "[z-a]",
-//         "[9-0]",
-//         "[Z-A]",
-
-//         // =====================
-//         // DANGLING / BAD DASH
-//         // =====================
-//         "[a-]",
-//         "[-a-]",
-//         "[a--z]",
-
-//         // =====================
-//         // ESCAPE AT END
-//         // =====================
-//         "[\\]",
-
-//         // =====================
-//         // NESTED / WEIRD BRACKETS
-//         // =====================
-//         "[[a]]",
-//         "[a[b]c]",
-
-//         // =====================
-//         // SHORTHANDS (IF SUPPORTED)
-//         // =====================
-//         "[\\d]",
-//         "[\\w]",
-//         "[\\s]",
-//         "[\\D]",
-//         "[\\W]",
-//         "[\\S]",
-//         "[a\\dZ]",
-
-//         // =====================
-//         // EXTRA CLOSING BRACKET
-//         // =====================
-//         "[a]]",
-//         "[a-z]]",
-
-//         // =====================
-//         // STRESS / LARGE CLASSES
-//         // =====================
-//         "[abcdefghijklmnopqrstuvwxyz]",
-//         "[a-zA-Z0-9_]",
-//         "[^\\w\\s\\d]"
-//     };
-
-//     for(int i = 0; i < char_class_tests.size(); i++){
-//         std::cout << i << " ";
-//         std::string test = char_class_tests[i];
-//         try {
-//             Tokenizer tz(test);
-//             std::vector<Token> tokens = tz.tokenize();
-//             std::cout << "OK: " << test << " ";
-//             for(Token token : tokens){
-//                 std::cout << token.type << " ";
-//                 if(token.type == TokenType::CHAR_CLASS){
-//                     if(token.negated){
-//                         std::cout << "Negated ";
-//                     }
-//                     std::cout << "Ranges: ";
-//                     for(CharRange range : token.ranges){
-//                         std::cout << range.lo << " to " << range.hi << "  ";
-//                     }
-//                 }
-//             }
-//             std::cout << std::endl;
-//         } catch (const std::exception& e) {
-//             std::cout << "ERR: " << test << " -> " << e.what() << "\n";
-//         }
-//     }
-// }

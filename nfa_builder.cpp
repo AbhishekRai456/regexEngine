@@ -74,8 +74,6 @@ State *NfaBuilder::copy_state(State *s, std::unordered_map<State *, State *> &lo
 // Returns a pointer to the start state of the constructed NFA, or nullptr if
 // the input is empty.
 State *NfaBuilder::build(const std::vector<Token> &postfix){
-    if (postfix.empty()) return nullptr;
-
     std::stack<Frag> stack;
 
     for (const auto &t : postfix){
@@ -256,8 +254,11 @@ State *NfaBuilder::build(const std::vector<Token> &postfix){
         }
     }
 
-    // If no fragments were built (empty regex) return nullptr (no NFA)
-    if (stack.empty()) return nullptr;
+    // If no fragments were built (empty regex)
+    if (stack.empty()){
+        State* s = create_state(StateType::SPLIT);
+        stack.push(Frag(s));
+    }
 
     // After processing all tokens, ideally there should be exactly one fragment
     // If more than one fragments remain, they are implicitly concatenated

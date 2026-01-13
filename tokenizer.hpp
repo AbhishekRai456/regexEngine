@@ -60,7 +60,7 @@ struct Token{
 
 class Tokenizer{
     public:
-    explicit Tokenizer(std::string_view pattern);
+    explicit Tokenizer(std::string_view pat);
     std::vector<Token> tokenize();
     private:
     std::string_view pattern;
@@ -82,33 +82,3 @@ class Tokenizer{
 void print(const std::vector<Token>);
 
 #endif // TOKENIZER_HPP
-
-// =======================
-// TODO — Tokenizer
-// =======================
-
-// [ ] Fix escape handling inside character classes:
-//     - \n, \t, \r, \f, \v should be converted to actual characters inside [].
-//     - Currently \n inside [] becomes 'n'.
-
-// [ ] Fix std::isdigit undefined behavior:
-//     - Use std::isdigit(static_cast<unsigned char>(c)).
-
-// [ ] Improve quantifier error handling:
-//     - Detect and error on unterminated {m,n}.
-//     - Better messages for malformed quantifiers.
-
-// [ ] Improve whitespace / non-whitespace shorthand ranges:
-//     - Double-check correctness of \s and \S range definitions.
-//     - Fix misleading comments in \S implementation.
-
-// [ ] Validate empty or invalid character classes more strictly:
-//     - e.g. [] , [^] , [-] edge cases.
-
-// [ ] Consider tracking token length for better error spans.
-//     (optional)
-
-// [ ] Add more unit tests for tokenizer edge cases.
-//     - Escapes
-//     - Nested ranges
-//     - Invalid syntax
