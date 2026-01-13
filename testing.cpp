@@ -164,7 +164,7 @@ int main(){
             // print(tokens);
             
             // 3. print nfa: (check results in nfas/)
-            // NfaPrinter::print_nfa(nb.build(postfix), i);
+            NfaPrinter::print_nfa(nb.build(postfix), i);
             State* s = nb.build(postfix);
         }catch (const std::exception& e) {
             std::cout << "ERR: "  << " -> " << e.what() << "\n";
@@ -183,7 +183,7 @@ int main(){
 // -> does not support lazy quantifier
 // -> empty parentheses -> gives error (design choice, pcre does not give error)
 // -> the time to execute this file might be large but that's only because we are printing the nfas using 'graphviz' for testing purposes
-// -> without the nfa printing, total time recorded by me to build these 100+ nfas was 400ms
+// -> without the nfa printing, total time recorded by me to build these 200+ nfas was 400ms
 
 // compile and run the file:
 // g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wshadow -Wconversion testing.cpp tokenizer.cpp postfix.cpp nfa_builder.cpp -o testing.exe
