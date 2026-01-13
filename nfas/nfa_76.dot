@@ -1,0 +1,34 @@
+digraph NFA {
+  rankdir=LR;
+  fontname="monospace";
+  "0x155f74abd10" [label="(START)\nSAVE 2 (start)", shape=doublecircle];
+  "0x155f74abd10" -> "0x155f74ac0d0" [label="ε"];
+  "0x155f74ac0d0" [label="SPLIT", shape=circle];
+  "0x155f74ac0d0" -> "0x155f74abf40" [label="ε"];
+  "0x155f74ac0d0" -> "0x155f74ac080" [label="ε"];
+  "0x155f74abf40" [label="SPLIT", shape=circle];
+  "0x155f74abf40" -> "0x155f74abb30" [label="ε"];
+  "0x155f74abf40" -> "0x155f74ac1c0" [label="ε"];
+  "0x155f74abb30" [label="SAVE 4 (start)", shape=circle];
+  "0x155f74abb30" -> "0x155f74abbd0" [label="ε"];
+  "0x155f74abbd0" [label="SAVE 6 (start)", shape=circle];
+  "0x155f74abbd0" -> "0x155f74abc70" [label="ε"];
+  "0x155f74abc70" [label="SAVE 8 (start)", shape=circle];
+  "0x155f74abc70" -> "0x155f74abcc0" [label="ε"];
+  "0x155f74abcc0" [label="CHAR", shape=circle];
+  "0x155f74abcc0" -> "0x155f74ac120" [label="a"];
+  "0x155f74ac120" [label="SAVE 9 (end)", shape=circle];
+  "0x155f74ac120" -> "0x155f74abe50" [label="ε"];
+  "0x155f74abe50" [label="SAVE 7 (end)", shape=circle];
+  "0x155f74abe50" -> "0x155f74abef0" [label="ε"];
+  "0x155f74abef0" [label="SAVE 5 (end)", shape=circle];
+  "0x155f74abef0" -> "0x155f74abf40" [label="ε"];
+  "0x155f74ac1c0" [label="SAVE 3 (end)", shape=circle];
+  "0x155f74ac1c0" -> "0x155f74aa630" [label="ε"];
+  "0x155f74aa630" [label="SPLIT", shape=circle];
+  "0x155f74aa630" -> "0x155f74abd10" [label="ε"];
+  "0x155f74aa630" -> "0x155f74aa6d0" [label="ε"];
+  "0x155f74aa6d0" [label="MATCH", shape=doublecircle color=green];
+  "0x155f74ac080" [label="CHAR", shape=circle];
+  "0x155f74ac080" -> "0x155f74ac1c0" [label="b"];
+}

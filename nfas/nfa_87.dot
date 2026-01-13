@@ -1,0 +1,16 @@
+digraph NFA {
+  rankdir=LR;
+  fontname="monospace";
+  "0x155f74aced0" [label="(START)\nCHAR", shape=doublecircle];
+  "0x155f74aced0" -> "0x155f74ad510" [label="a"];
+  "0x155f74ad510" [label="SAVE 2 (start)", shape=circle];
+  "0x155f74ad510" -> "0x155f74acf20" [label="ε"];
+  "0x155f74acf20" [label="SPLIT", shape=circle];
+  "0x155f74acf20" -> "0x155f74ade20" [label="ε"];
+  "0x155f74acf20" -> "0x155f74ad1a0" [label="ε"];
+  "0x155f74ade20" [label="CHAR", shape=circle];
+  "0x155f74ade20" -> "0x155f74acf20" [label="b"];
+  "0x155f74ad1a0" [label="SAVE 3 (end)", shape=circle];
+  "0x155f74ad1a0" -> "0x155f74ad560" [label="ε"];
+  "0x155f74ad560" [label="MATCH", shape=doublecircle color=green];
+}

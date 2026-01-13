@@ -53,6 +53,22 @@ public:
     }
 
 private:
+    static std::string dot_escape_char(unsigned char c) {
+        if (c == '\\') return "\\\\";
+        if (c == '"')  return "\\\"";
+        if (c == '\n') return "\\n";
+        if (c == '\t') return "\\t";
+        if (c == '\r') return "\\r";
+        if (c == '\f') return "\\f";
+        if (c == '\v') return "\\v";
+        if (c < 32 || c == 127) {
+            char buf[8];
+            std::snprintf(buf, sizeof(buf), "\\x%02X", c);
+            return buf;
+        }
+        return std::string(1, c);
+    }
+
     static void print_state(State* s, bool isStart, std::set<State*>& visited, std::ostream& out) {
         if (!s || visited.count(s)) return;
         visited.insert(s);
@@ -111,24 +127,15 @@ private:
         std::string str = "";
         switch (s->type) {
             case StateType::CHAR:
-                switch (s->c) {
-                    case '\\': str += "\\\\"; break;
-                    case '"':  str += "\\\""; break;
-                    case '\n': str += "\\n";  break;
-                    case '\t': str += "\\t";  break;
-                    case '\r': str += "\\r";  break;
-                    case '\f': str += "\\f";  break;
-                    case '\v': str += "\\v";  break;
-                    default:   str += s->c; break;
-                }
+                str += dot_escape_char(s->c);
                 break;
             case StateType::CHAR_CLASS: {
                 str = s->negated ? "[^" : "[";
                 for (auto& r : s->ranges) {
-                    str += r.lo;
+                    str += dot_escape_char(r.lo);
                     if (r.lo != r.hi) {
                         str += "-";
-                        str += r.hi;
+                        str += dot_escape_char(r.hi);
                     }
                 }
                 str += "]";

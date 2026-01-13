@@ -22,8 +22,8 @@ int main(){
         "a*","(ab)*","(a|b)*","((ab)*)*","(a*)*",
         "a+","(ab)+","(a|b)+",
         "a?","(ab)?","(a|b)?",
-            // "()+", -> runtime error (empty parentheses) (correct by design)
-            // "a**", -> runtime error (quantifier follow invalid token) (correct)
+        "()+", // -> runtime error (empty parentheses) (correct by design)
+        "a**", // -> runtime error (quantifier follow invalid token) (correct)
 
         // Mixed Quantifiers
         "a*b+","a+b*","a?b+","(a|b)*c","(a|b)+c",
@@ -55,7 +55,7 @@ int main(){
         "a|aa","(a|aa)*","(a|ab)*","(ab|a)*",
 
         // Epsilon-heavy
-            // "a*?", -> runtime error (does not support lazy quantifiers as of now)
+        "a*?", // -> runtime error (does not support lazy quantifiers as of now)
         "(a?)*","(a*)?","((a?)*)*",
 
         // Large
@@ -66,41 +66,125 @@ int main(){
 
         // Special / Edge
         "",
-            // "(a(b)", -> runtime error (missing parentheses) (correct)
-            // "[a-z" , -> runtime error (unterminated char class) (correct)
-            // "a{2,1}" -> runtime error (invalid range) (correct)
+        "(a(b)", // -> runtime error (missing parentheses) (correct)
+        "[a-z" , // -> runtime error (unterminated char class) (correct)
+        "a{2,1}" // -> runtime error (invalid range) (correct)
+
+        // CHAR CLASS TESTS: (These tests mostly test the tokenizer because the NFA is lite)
+        // Basic valid classes
+        "[a]", "[z]", "[0]", "[_]", "[9]",
+        "[abc]", "[xyz]", "[aZ9_]",
+
+        // Simple ranges
+        "[a-z]", "[A-Z]", "[0-9]",
+
+        // Multiple ranges
+        "[a-zA-Z]", "[a-z0-9]", "[A-Fa-f0-9]",
+        "[a-zA-Z0-9_]", "[A-Za-z_]", "[0-9A-Fa-f]",
+
+        // Mixed range + literal
+        "[a-z_]", "[_a-z]", "[a-z9]", "[0-9a-f]",
+
+        // Negated classes
+        "[^a]", "[^abc]", "[^a-z]", "[^a-zA-Z0-9_]",
+        "[^\\w\\s\\d]", "[^-]", "[^\\d]", "[^\\d-]", "[^]]",
+
+        // Escaped characters
+        "[\\]]", "[\\[]", "[\\-]", "[\\\\]", "[\\^]",
+        "[\\.]", "[\\{]", "[\\}]", "[\\(]", "[\\)]",
+
+        // Escaped + normal mix
+        "[a\\-z]", "[a\\]z]", "[\\-a-z]", "[a\\[b\\]c]",
+        "[a\\]b]", "[a\\]]", "[a\\-\\]]",
+
+        // Hyphen handling
+        "[-]", "[--]", "[a-]", "[-a]", "[a-b]", "[--a]",
+        "[a-b-c]", "[a--c]", "[a\\--c]", "[\\--\\-]",
+
+        // ASCII / table spans
+        "[ -/]", "[A-z]", "[!-~]",
+
+        // Empty / malformed
+        "[]", "[^]", "[", "[a", "[^a", "[a-z", "[\\]", "[]]", "[]-a]",
+
+        // Invalid ranges
+        "[z-a]", "[9-0]", "[Z-A]", "[a--b]",
+
+        // Nested / weird
+        "[[a]]", "[a[b]c]",
+
+        // Shorthands
+        "[\\d]", "[\\D]", "[\\w]", "[\\W]", "[\\s]", "[\\S]",
+        "[\\d\\d]", "[\\d\\w]", "[\\w\\d]", "[\\s\\d]",
+        "[\\d-]", "[\\w-]", "[a\\dZ]",
+
+        // Illegal shorthand ranges
+        "[\\d-a]", "[a-\\d]", "[\\d-\\w]", "[\\w-\\s]",
+        "[\\s-\\d]", "[^\\d-a]", "[^\\s-\\w]",
+
+        // Boundary / weird negations
+        "[^^]", "[^\\^]", "[^\\[]",
+
+        // Adjacent ranges
+        "[a-bc]", "[ab-c]", "[a-b-c-d]",
+
+        // Escaped range boundaries
+        "[\\[-\\]]",
+
+        // Weird escapes
+        "[\\n]", "[\\t]", "[\\r]", "[\\v]", "[\\f]",
+
+        // Literal metacharacters
+        "[.]", "[(]", "[)]", "[{]", "[}]", "[|]", "[*]", "[+]", "[?]",
+
+        // Overlapping syntax
+        "[a|b]", "[a||b]",
+
+        // Stress
+        "[abcdefghijklmnopqrstuvwxyz]"
     };
 
     // Test:
+    auto start = std::chrono::high_resolution_clock::now();
+
     PostfixConverter pc;
     NfaBuilder nb;
     for(size_t i = 0; i < tcs.size(); i++){
-        std::cout << "running tc: " << i << " : " << tcs[i] <<"\n";
-        Tokenizer t(tcs[i]);
-        vector<Token> tokens = t.tokenize();
-        // 1. print tokens:
-        // std::cout << "tokens:" << std::endl;
-        // print(tokens);
-
-        vector<Token> postfix = pc.convert(tokens);
-        // 2. print postfix:
-        // std::cout << "postfix:" << std::endl;
-        // print(tokens);
-        
-        // 3. print nfa: (check results in nfas/)
-        NfaPrinter::print_nfa(nb.build(postfix), i);
+        try{
+            std::cout << "running tc: " << i << " : " << tcs[i] <<"\n";
+            Tokenizer t(tcs[i]);
+            vector<Token> tokens = t.tokenize();
+            // 1. print tokens:
+            // std::cout << "tokens:" << std::endl;
+            // print(tokens);
+    
+            vector<Token> postfix = pc.convert(tokens);
+            // 2. print postfix:
+            // std::cout << "postfix:" << std::endl;
+            // print(tokens);
+            
+            // 3. print nfa: (check results in nfas/)
+            // NfaPrinter::print_nfa(nb.build(postfix), i);
+            State* s = nb.build(postfix);
+        }catch (const std::exception& e) {
+            std::cout << "ERR: "  << " -> " << e.what() << "\n";
+        }
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Elapsed time: " << elapsed.count() << " ms\n";
     return 0;
 }
 
-// Result:
-// Successfully built correct NFAs for these 100+ tcs
+// Result of tests:
+// Successfully built correct NFAs for these 200+ tcs
 // NOTE:
 // -> does not support lazy quantifier
 // -> empty parentheses -> gives error (design choice, pcre does not give error)
 // -> the time to execute this file might be large but that's only because we are printing the nfas using 'graphviz' for testing purposes
-// -> without the nfa printing, total time recorded by me to build these 100+ nfas was 184ms
+// -> without the nfa printing, total time recorded by me to build these 100+ nfas was 400ms
 
 // compile and run the file:
-// g++ -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -Wconversion testing.cpp tokenizer.cpp postfix.cpp nfa_builder.cpp -o testing.exe
+// g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wshadow -Wconversion testing.cpp tokenizer.cpp postfix.cpp nfa_builder.cpp -o testing.exe
 // .\testing .exe

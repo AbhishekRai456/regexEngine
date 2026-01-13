@@ -1,0 +1,24 @@
+digraph NFA {
+  rankdir=LR;
+  fontname="monospace";
+  "0x155f74b1670" [label="(START)\nSPLIT", shape=doublecircle];
+  "0x155f74b1670" -> "0x155f74b10d0" [label="ε"];
+  "0x155f74b1670" -> "0x155f74b1e40" [label="ε"];
+  "0x155f74b10d0" [label="SAVE 2 (start)", shape=circle];
+  "0x155f74b10d0" -> "0x155f74b12b0" [label="ε"];
+  "0x155f74b12b0" [label="SPLIT", shape=circle];
+  "0x155f74b12b0" -> "0x155f74b0e00" [label="ε"];
+  "0x155f74b12b0" -> "0x155f74b1a30" [label="ε"];
+  "0x155f74b0e00" [label="SAVE 4 (start)", shape=circle];
+  "0x155f74b0e00" -> "0x155f74b1ee0" [label="ε"];
+  "0x155f74b1ee0" [label="SPLIT", shape=circle];
+  "0x155f74b1ee0" -> "0x155f74b2070" [label="ε"];
+  "0x155f74b1ee0" -> "0x155f74b1940" [label="ε"];
+  "0x155f74b2070" [label="CHAR", shape=circle];
+  "0x155f74b2070" -> "0x155f74b1940" [label="a"];
+  "0x155f74b1940" [label="SAVE 5 (end)", shape=circle];
+  "0x155f74b1940" -> "0x155f74b12b0" [label="ε"];
+  "0x155f74b1a30" [label="SAVE 3 (end)", shape=circle];
+  "0x155f74b1a30" -> "0x155f74b1670" [label="ε"];
+  "0x155f74b1e40" [label="MATCH", shape=doublecircle color=green];
+}

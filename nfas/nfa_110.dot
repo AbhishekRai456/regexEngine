@@ -1,0 +1,7 @@
+digraph NFA {
+  rankdir=LR;
+  fontname="monospace";
+  "0x155f74b39f0" [label="(START)\nCHAR_CLASS", shape=doublecircle];
+  "0x155f74b39f0" -> "0x155f74b3b80" [label="[_]"];
+  "0x155f74b3b80" [label="MATCH", shape=doublecircle color=green];
+}

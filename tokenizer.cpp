@@ -190,76 +190,150 @@ void Tokenizer::add_shorthand_ranges(char c, Token& t){
     }
 }
 
-Token Tokenizer::read_char_class(){
-    Token t{TokenType::CHAR_CLASS, i-1};
-    if(peek() == '^'){
+// Sorts the ranges and merges overlapping or adjacent intervals in place,
+// producing a minimal, ordered set of non-overlapping character ranges.
+void normalize_ranges(std::vector<CharRange>& ranges) {
+    if (ranges.empty()) return;
+
+    std::sort(ranges.begin(), ranges.end(),
+        [](const CharRange& a, const CharRange& b) {
+            if (a.lo != b.lo) return a.lo < b.lo;
+            return a.hi < b.hi;
+        });
+
+    size_t write = 0;
+
+    for (size_t read = 1; read < ranges.size(); ++read) {
+        CharRange& last = ranges[write];
+        const CharRange& cur = ranges[read];
+
+        if (cur.lo <= last.hi + 1) {
+            // merge into last
+            last.hi = std::max(last.hi, cur.hi);
+        } else {
+            // move cur to next write position
+            ++write;
+            ranges[write] = cur;
+        }
+    }
+
+    ranges.resize(write + 1);
+}
+
+Token Tokenizer::read_char_class()
+{
+    Token t{TokenType::CHAR_CLASS, i - 1};
+    if (peek() == '^')
+    {
         t.negated = true;
         get();
     }
 
-    bool have_prev = false;
-    char prev = '\0';
-    while(!eof() && peek() != ']'){
+    bool have_prev = false; // whether we have a pending character for range or literal
+    bool last_was_shorthand = false; // whether last token was \d, \w, etc.
+    char prev;
+
+    // Read until closing ']'
+    while (!eof() && peek() != ']')
+    {
         char c = get();
-        if(c == '\\'){
-            if(eof()) throw std::runtime_error("dangling escape in char class");
-            c = get();
-            if (c == 'd' || c == 'D' ||
-                c == 'w' || c == 'W' ||
-                c == 's' || c == 'S'){
-                if(have_prev){
-                    t.ranges.push_back({prev, prev});
-                    have_prev = false;
-                }
-                add_shorthand_ranges(c, t);
+        if (c == '\\')  // Handle escape sequences
+        {
+            if (eof())
+                throw std::runtime_error("dangling escape in char class");
+            // Flush pending literal before escape
+            if (have_prev)
+            {
+                t.ranges.push_back({prev, prev});
                 have_prev = false;
-                continue;
+            }
+            c = get();
+            switch (c)
+            {
+            // Common escaped control characters
+            case 'n': prev = '\n'; have_prev = true; last_was_shorthand = false; break;
+            case 't': prev = '\t'; have_prev = true; last_was_shorthand = false; break;
+            case 'r': prev = '\r'; have_prev = true; last_was_shorthand = false; break;
+            case 'f': prev = '\f'; have_prev = true; last_was_shorthand = false; break;
+            case 'v': prev = '\v'; have_prev = true; last_was_shorthand = false; break;
+
+            // Shorthand character classes
+            case 'd':
+            case 'w':
+            case 's':
+            case 'D':
+            case 'W':
+            case 'S':
+            {
+                add_shorthand_ranges(c, t);
+                last_was_shorthand = true;
+                break;
             }
 
-            // If the hyphen is escaped
-            if(c == '-'){
-                if(have_prev){
-                    t.ranges.push_back({prev, prev});
-                }
-                prev = '-';
+            // Escaped literal characters
+            default:
+            {
+                prev = c;
                 have_prev = true;
-                continue;
+                last_was_shorthand = false;
+                break;
             }
-        }
-        if(have_prev && c == '-' && peek() != ']'){
-            char end = get();
-            if(end == '\\'){
-                if(eof()) throw std::runtime_error("dangling escape in range");
-                end = get();
             }
-            if(prev > end) throw std::runtime_error("invalid character range");
-            t.ranges.push_back({prev, end});
-            have_prev = false;
             continue;
         }
 
-        if(have_prev){
-            t.ranges.push_back({prev, prev});
+        // Handle range syntax:
+        if (have_prev && c == '-' && peek() != ']')
+        { // when '-' acts as a range specifier
+            char ub = get();
+            if (ub == '\\') // Handle escaped upper bound
+            {
+                if (eof())
+                    throw std::runtime_error("dangling escape in range");
+                ub = get();
+                if (ub == 'd' || ub == 'D' ||
+                    ub == 'w' || ub == 'W' ||
+                    ub == 's' || ub == 'S')
+                {
+                    throw std::runtime_error("cannot create a range with shorthand escape sequences");
+                }
+            }
+            if (prev > ub) throw std::runtime_error("invalid character range");
+            t.ranges.push_back({prev, ub});
+            have_prev = false;
+            continue;
         }
+        if (c == '-' && last_was_shorthand && peek() != ']')
+        {
+            throw std::runtime_error("cannot create a range with shorthand escape sequences");
+        }
+
+        // Flush pending literal if no range follows
+        if (have_prev) t.ranges.push_back({prev, prev});
 
         prev = c;
         have_prev = true;
+        last_was_shorthand = false;
     }
 
-    if(eof()) throw std::runtime_error("unterminated character class");
-    if(have_prev){
-        t.ranges.push_back({prev, prev});
-    }
-    if(t.ranges.empty()) throw std::runtime_error("empty character class");
-    get();
+    // Missing closing ']'
+    if (eof()) throw std::runtime_error("unterminated character class");
+    if (have_prev) t.ranges.push_back({prev, prev}); // Flush last pending character
+    if (t.ranges.empty()) throw std::runtime_error("empty character class"); // Disallow empty classes
+    get(); // consume ']'
+    normalize_ranges(t.ranges);
     return t;
 }
+// NOTE: []] will be treated as an empty char class followed by a ] literal
+// In many engines it gets processed as a valid char class with literal ']' but
+// we currently treat the earliest found ] as the end of the char class as a design
+// choice. To use ] as a literal inside the char class, user needs to escape it.
 
 Token Tokenizer::read_quantifier(){
     Token t{TokenType::QUANTIFIER_RANGE, i-1};
 
     auto skip_spaces = [&](){
-        while(!eof() && std::isspace(static_cast<unsigned char>(peek()))){
+        while(!eof() && std::isspace(peek())){
             get();
         }
     };
