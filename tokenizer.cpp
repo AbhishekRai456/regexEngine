@@ -49,7 +49,7 @@ void Tokenizer::add_concat_tokens(std::vector<Token>& tokens) {
         current.type == TokenType::PLUS ||
         current.type == TokenType::QUESTION ||
         current.type == TokenType::QUANTIFIER_RANGE ||
-        current.type == TokenType::CARET     // YES: Anchor start links to what follows
+        current.type == TokenType::CARET
     );
 
     bool is_starter = (
@@ -57,11 +57,10 @@ void Tokenizer::add_concat_tokens(std::vector<Token>& tokens) {
         next.type == TokenType::DOT ||
         next.type == TokenType::LPAREN || 
         next.type == TokenType::CHAR_CLASS ||
-        next.type == TokenType::DOLLAR       // YES: Link previous content to Anchor end
+        next.type == TokenType::DOLLAR
     );
 
         if (is_ender && is_starter) {
-            // We use the position of the current token for debugging/error info
             Token concat;
             concat.type = TokenType::CONCAT;
             concat.pos = current.pos; 
@@ -192,7 +191,7 @@ void Tokenizer::add_shorthand_ranges(char c, Token& t){
 
 // Sorts the ranges and merges overlapping or adjacent intervals in place,
 // producing a minimal, ordered set of non-overlapping character ranges.
-void normalize_ranges(std::vector<CharRange>& ranges) {
+void Tokenizer::normalize_ranges(std::vector<CharRange>& ranges) {
     if (ranges.empty()) return;
 
     std::sort(ranges.begin(), ranges.end(),

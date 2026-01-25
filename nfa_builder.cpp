@@ -10,7 +10,7 @@ State *NfaBuilder::create_state(StateType type){
 // Deep copy a fargment's NFA
 // Returns a new Frag with the copied start state and the copied exits
 Frag NfaBuilder::copy_fragment(Frag original){
-    std::unordered_map<State *, State *> old_to_new;
+    std::unordered_map<State *, State *> old_to_new; // stores the states we have already visited and its cloned copies
     State *new_start = copy_state(original.start, old_to_new);
 
     std::vector<State **> new_exits;

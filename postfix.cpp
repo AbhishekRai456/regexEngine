@@ -19,7 +19,7 @@ int PostfixConverter::get_precedence(TokenType type) {
 std::vector<Token> PostfixConverter::convert(const std::vector<Token>& infix) {
     std::vector<Token> postfix;
     std::stack<Token> operators;
-    TokenType last_type = TokenType::END; // Initial sentinel
+    TokenType last_type = TokenType::END;
 
     for (const auto& t : infix) {
         switch (t.type) {

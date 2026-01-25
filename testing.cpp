@@ -183,7 +183,7 @@ int main(){
 // -> does not support lazy quantifier
 // -> empty parentheses -> gives error (design choice, pcre does not give error)
 // -> the time to execute this file might be large but that's only because we are printing the nfas using 'graphviz' for testing purposes
-// -> without the nfa printing, total time recorded by me to build these 200+ nfas was 400ms
+// -> without the nfa printing, total time recorded by me to build these 200+ nfas was 100ms
 
 // compile and run the file:
 // g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Wshadow -Wconversion testing.cpp tokenizer.cpp postfix.cpp nfa_builder.cpp -o testing.exe
