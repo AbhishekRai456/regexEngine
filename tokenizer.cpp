@@ -337,7 +337,7 @@ Token Tokenizer::read_quantifier(){
         }
     };
 
-    auto read_int = [&]() -> int{
+    auto read_int = [&]() -> unsigned int{
         skip_spaces();
         int val = 0;
         bool found = false;
@@ -345,7 +345,7 @@ Token Tokenizer::read_quantifier(){
             found = true;
             val = val * 10 + (get() - '0');
         }
-        if(!found) throw std::runtime_error("expected number in quantifier");
+        if(!found && peek() != ',') throw std::runtime_error("expected number in quantifier");
         skip_spaces();
         return val;
     };

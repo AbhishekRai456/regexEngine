@@ -141,36 +141,39 @@ int main(){
         "[a|b]", "[a||b]",
 
         // Stress
-        "[abcdefghijklmnopqrstuvwxyz]"
+        "[abcdefghijklmnopqrstuvwxyz]",
+
+        // Weird Quantifiers
+        "{2,3}", "{  4   , 7   }", "{  6   ,  }", "{  ,   10  }", "{    ,  }", "{}", "{   }", "{ 22 , a }", "{  8 ,  2}"
     };
+
+    vector<std::string> weirdQuantifiers = {"{2,3}", "{  4   , 7   }", "{  6   ,  }", "{  ,   10  }", "{    ,  }", "{}", "{   }", "{ 22 , a }", "{  8 ,  2}"};
 
     // Test:
     auto start = std::chrono::high_resolution_clock::now();
-
-    PostfixConverter pc;
+    
     NfaBuilder nb;
-    for(size_t i = 0; i < tcs.size(); i++){
+    for(size_t i = 0; i < weirdQuantifiers.size(); i++){
         try{
-            std::cout << "running tc: " << i << " : " << tcs[i] <<"\n";
-            Tokenizer t(tcs[i]);
+            std::cout << "running tc: " << i << " : " << weirdQuantifiers[i] <<"\n";
+            Tokenizer t(weirdQuantifiers[i]);
             vector<Token> tokens = t.tokenize();
             // 1. print tokens:
-            // std::cout << "tokens:" << std::endl;
-            // print(tokens);
+            std::cout << "tokens:" << std::endl;
+            print(tokens);
     
-            vector<Token> postfix = pc.convert(tokens);
+            vector<Token> postfix = PostfixConverter::convert(tokens);
             // 2. print postfix:
             // std::cout << "postfix:" << std::endl;
             // print(tokens);
             
             // 3. print nfa: (check results in nfas/)
-            NfaPrinter::print_nfa(nb.build(postfix), i);
-            State* s = nb.build(postfix);
+            // NfaPrinter::print_nfa(nb.build(postfix), i);
+            // State* s = nb.build(postfix);
         }catch (const std::exception& e) {
             std::cout << "ERR: "  << " -> " << e.what() << "\n";
         }
     }
-
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Elapsed time: " << elapsed.count() << " ms\n";
